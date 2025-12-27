@@ -14,21 +14,31 @@ export default async function handler(req, res) {
   let videoId = id;
 
   try {
-    // Ambil info video
-    const info = await ytdl.getInfo(videoId);
-    const videoDetails = info.videoDetails;
-
-    // Ambil audio-only, paling ringan
-    const audioFormat = ytdl.filterFormats(info.formats, "audioonly").find(f => f.audioBitrate) || null;
-
-    if (!audioFormat) {
-      return res.status(500).json({
+    // Ambil info video dengan try-catch
+    const info = await ytdl.getInfo(videoId).catch(() => null);
+    if (!info) {
+      return res.status(404).json({
         status: "error",
-        message: "Tidak dapat mengambil audio dari video ini"
+        message: "Video tidak ditemukan atau private"
       });
     }
 
-    // Response JSON khusus audio
+    const videoDetails = info.videoDetails;
+
+    // Ambil audio-only paling ringan
+    let audioFormat = null;
+    try {
+      audioFormat = ytdl.filterFormats(info.formats, "audioonly")
+                        .find(f => f.audioBitrate && f.url);
+      if (!audioFormat) throw new Error();
+    } catch {
+      return res.status(500).json({
+        status: "error",
+        message: "Audio tidak bisa diambil, coba video lain"
+      });
+    }
+
+    // Response JSON
     return res.status(200).json({
       status: "success",
       data: {
@@ -43,7 +53,7 @@ export default async function handler(req, res) {
     console.error(err);
     return res.status(500).json({
       status: "error",
-      message: "Gagal mengambil audio. Pastikan video valid, publik, dan bukan live/Shorts durasi panjang."
+      message: "Gagal mengambil audio. Pastikan video valid, publik, dan bukan live/Shorts durasi terlalu panjang."
     });
   }
 }
