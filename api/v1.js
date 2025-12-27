@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   let videoId = id;
 
   try {
-    // Ambil info video dengan try-catch
+    // Ambil info video ringan
     const info = await ytdl.getInfo(videoId).catch(() => null);
     if (!info) {
       return res.status(404).json({
@@ -26,19 +26,17 @@ export default async function handler(req, res) {
     const videoDetails = info.videoDetails;
 
     // Ambil audio-only paling ringan
-    let audioFormat = null;
-    try {
-      audioFormat = ytdl.filterFormats(info.formats, "audioonly")
-                        .find(f => f.audioBitrate && f.url);
-      if (!audioFormat) throw new Error();
-    } catch {
+    let audioFormat = ytdl.filterFormats(info.formats, "audioonly")
+                        .find(f => f.audioBitrate && f.url) || null;
+
+    if (!audioFormat) {
       return res.status(500).json({
         status: "error",
         message: "Audio tidak bisa diambil, coba video lain"
       });
     }
 
-    // Response JSON
+    // Response JSON untuk API ringan
     return res.status(200).json({
       status: "success",
       data: {
@@ -56,4 +54,4 @@ export default async function handler(req, res) {
       message: "Gagal mengambil audio. Pastikan video valid, publik, dan bukan live/Shorts durasi terlalu panjang."
     });
   }
-}
+      }
