@@ -18,8 +18,8 @@ export default async function handler(req, res) {
     const info = await ytdl.getInfo(videoId);
     const videoDetails = info.videoDetails;
 
-    // Ambil audio format mp3/audio only
-    const audioFormat = ytdl.filterFormats(info.formats, "audioonly")[0];
+    // Ambil audio-only, paling ringan
+    const audioFormat = ytdl.filterFormats(info.formats, "audioonly").find(f => f.audioBitrate) || null;
 
     if (!audioFormat) {
       return res.status(500).json({
@@ -28,22 +28,22 @@ export default async function handler(req, res) {
       });
     }
 
-    // Response JSON untuk API publik
+    // Response JSON khusus audio
     return res.status(200).json({
       status: "success",
       data: {
         title: videoDetails.title,
         author: videoDetails.author.name,
         duration: videoDetails.lengthSeconds + "s",
-        videoUrl: `https://www.youtube.com/watch?v=${videoDetails.videoId}`,
         audioUrl: audioFormat.url
       }
     });
+
   } catch (err) {
     console.error(err);
     return res.status(500).json({
       status: "error",
-      message: "Gagal mengambil video / MP3. Pastikan video valid dan public."
+      message: "Gagal mengambil audio. Pastikan video valid, publik, dan bukan live/Shorts durasi panjang."
     });
   }
-      }
+}
